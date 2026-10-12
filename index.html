@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,51 +7,68 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#fff;font-family:Arial,sans-serif}
-.container{width:92%;max-width:700px;margin:24px auto}
-h1{text-align:center}
+.container{width:92%;max-width:760px;margin:22px auto;padding-bottom:28px}
+h1{text-align:center;margin-bottom:6px}
 .subtitle{text-align:center;color:#bbb;margin-bottom:22px}
 .card{background:#151b2e;padding:18px;border-radius:14px;margin-bottom:16px}
 .title{display:block;font-weight:bold;font-size:17px;margin-bottom:12px}
-input[type=file]{width:100%;padding:10px;background:#0d1324;color:white;border-radius:8px}
-input[type=color]{width:60px;height:42px}
-button{width:100%;padding:14px;margin-top:10px;border:0;border-radius:10px;background:#6c5ce7;color:#fff;font-size:16px;font-weight:bold}
-button:disabled{opacity:.55}
+input[type=file]{width:100%;padding:10px;background:#0d1324;color:white;border-radius:8px;margin:4px 0}
+input[type=color]{width:64px;height:44px;border:0;background:transparent;vertical-align:middle}
+button{width:100%;padding:14px;margin-top:10px;border:0;border-radius:10px;background:#6c5ce7;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
 .preview{display:block;width:100%;max-height:420px;object-fit:contain;margin-top:12px;background-color:#ddd;border-radius:8px}
 #preview{background-image:linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
 #status{display:none;white-space:pre-wrap;overflow-wrap:anywhere;background:#10172a;padding:12px;border-radius:8px;margin-top:12px;line-height:1.5}
 .small{font-size:13px;color:#bbb;line-height:1.5}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+hr{border:0;border-top:1px solid #303950;margin:18px 0}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>🎬 VidMorph AI</h1>
-<div class="subtitle">FREE AI IMAGE BACKGROUND STUDIO</div>
+  <h1>🎬 VidMorph AI</h1>
+  <div class="subtitle">FREE AI IMAGE BACKGROUND STUDIO</div>
 
-<div class="card">
-<label class="title" for="imageInput">1. Upload Your Image</label>
-<input type="file" id="imageInput" accept="image/*">
-<img id="preview" class="preview" alt="Original image preview" hidden>
-</div>
+  <div class="card">
+    <label class="title" for="imageInput">1. Upload Your Main Image</label>
+    <input type="file" id="imageInput" accept="image/*">
+    <img id="preview" class="preview" alt="Original image preview" hidden>
+    <p class="small">Choose the photo whose background you want to remove.</p>
+  </div>
 
-<div class="card">
-<label class="title">2. Choose Background Color</label>
-<input type="color" id="bgColor" value="#ffffff" aria-label="Background color">
-<button id="removeBtn">✨ Remove Background with AI</button>
-<button id="applyBtn" disabled>🎨 Apply New Background</button>
-<p class="small">The first run downloads AI model files. Keep this page open and use a stable internet connection.</p>
-</div>
+  <div class="card">
+    <span class="title">2. Remove Background</span>
+    <button id="removeBtn">✨ Remove Background with AI</button>
+    <p class="small">The first use downloads AI model files and may take several minutes. Keep this page open with a stable internet connection.</p>
+  </div>
 
-<div class="card">
-<label class="title">3. Edited Image</label>
-<canvas id="canvas" class="preview" hidden></canvas>
-<button id="downloadBtn" disabled>⬇️ Download PNG</button>
-<div id="status" role="status" aria-live="polite"></div>
-</div>
+  <div class="card">
+    <span class="title">3. Choose Your New Background</span>
+    <label class="title" for="backgroundInput">Use a photo from your phone gallery</label>
+    <input type="file" id="backgroundInput" accept="image/*">
+    <img id="backgroundPreview" class="preview" alt="Chosen background preview" hidden>
+    <hr>
+    <label class="title" for="bgColor">Or choose a solid background color</label>
+    <div class="row">
+      <input type="color" id="bgColor" value="#ffffff" aria-label="Background color">
+      <span class="small">Choose any color if you do not want to use a background photo.</span>
+    </div>
+    <button id="applyBtn" disabled>🎨 Apply Background</button>
+  </div>
+
+  <div class="card">
+    <span class="title">4. Edited Image</span>
+    <canvas id="canvas" class="preview" hidden></canvas>
+    <button id="downloadBtn" disabled>⬇️ Download PNG</button>
+    <div id="status" role="status" aria-live="polite"></div>
+  </div>
 </div>
 
 <script type="module">
 const input = document.getElementById("imageInput");
 const preview = document.getElementById("preview");
+const backgroundInput = document.getElementById("backgroundInput");
+const backgroundPreview = document.getElementById("backgroundPreview");
 const colorInput = document.getElementById("bgColor");
 const removeBtn = document.getElementById("removeBtn");
 const applyBtn = document.getElementById("applyBtn");
@@ -62,47 +78,71 @@ const ctx = canvas.getContext("2d");
 const status = document.getElementById("status");
 
 let originalFile = null;
-let foregroundImage = null;
-let foregroundURL = null;
 let sourceURL = null;
 let sourceImage = null;
+let foregroundURL = null;
+let foregroundImage = null;
+let backgroundURL = null;
+let backgroundImage = null;
 
 function message(text) {
   status.style.display = "block";
   status.textContent = text;
 }
-
 function loadImage(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Browser could not read this image."));
+    img.onerror = () => reject(new Error("The browser could not read this image."));
     img.src = url;
   });
 }
-
-function drawImage(img, background = null) {
+function drawForegroundOnly(img) {
   canvas.width = img.naturalWidth || img.width;
   canvas.height = img.naturalHeight || img.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (background) {
-    ctx.fillStyle = background;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   canvas.hidden = false;
   downloadBtn.disabled = false;
+}
+function drawComposite() {
+  if (!foregroundImage) {
+    message("Please remove the background from your main image first.");
+    return;
+  }
+  const width = foregroundImage.naturalWidth || foregroundImage.width;
+  const height = foregroundImage.naturalHeight || foregroundImage.height;
+  canvas.width = width;
+  canvas.height = height;
+  ctx.clearRect(0, 0, width, height);
+
+  if (backgroundImage) {
+    // Fill the canvas while keeping the background photo's aspect ratio.
+    const scale = Math.max(width / backgroundImage.naturalWidth, height / backgroundImage.naturalHeight);
+    const drawWidth = backgroundImage.naturalWidth * scale;
+    const drawHeight = backgroundImage.naturalHeight * scale;
+    ctx.drawImage(backgroundImage, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+  } else {
+    ctx.fillStyle = colorInput.value;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  // Foreground image has transparent pixels where the original background was removed.
+  ctx.drawImage(foregroundImage, 0, 0, width, height);
+  canvas.hidden = false;
+  downloadBtn.disabled = false;
+  message(backgroundImage
+    ? "Background photo applied successfully. Tap Download PNG to save."
+    : "Background color applied successfully. Tap Download PNG to save.");
 }
 
 input.addEventListener("change", async () => {
   const file = input.files && input.files[0];
   if (!file) return;
-
   if (!file.type.startsWith("image/")) {
     message("Please select an image file.");
     return;
   }
-
   originalFile = file;
   foregroundImage = null;
   applyBtn.disabled = true;
@@ -111,78 +151,87 @@ input.addEventListener("change", async () => {
 
   if (sourceURL) URL.revokeObjectURL(sourceURL);
   if (foregroundURL) URL.revokeObjectURL(foregroundURL);
-
   sourceURL = URL.createObjectURL(file);
+  foregroundURL = null;
   preview.hidden = true;
-  message("Loading image preview...");
-
+  message("Loading main image preview...");
   try {
     sourceImage = await loadImage(sourceURL);
-    preview.onload = () => {
-      preview.hidden = false;
-    };
-    preview.onerror = () => {
-      message("Preview failed. Try a different JPG or PNG image.");
-    };
     preview.src = sourceURL;
     preview.hidden = false;
-    drawImage(sourceImage);
-    message("Image loaded successfully. Tap Remove Background with AI.");
+    drawForegroundOnly(sourceImage);
+    message("Main image loaded. Tap Remove Background with AI.");
   } catch (error) {
-    message("Could not load image: " + error.message);
+    message("Could not load main image: " + error.message);
   }
 });
 
-removeBtn.addEventListener("click", async () => {
-  message("Button clicked.");
-
-  if (!originalFile) {
-    message("Please upload an image first.");
+backgroundInput.addEventListener("change", async () => {
+  const file = backgroundInput.files && backgroundInput.files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    message("Please select a background image file.");
     return;
   }
+  if (backgroundURL) URL.revokeObjectURL(backgroundURL);
+  backgroundURL = URL.createObjectURL(file);
+  backgroundImage = null;
+  backgroundPreview.hidden = true;
+  message("Loading chosen background photo...");
+  try {
+    backgroundImage = await loadImage(backgroundURL);
+    backgroundPreview.src = backgroundURL;
+    backgroundPreview.hidden = false;
+    message("Background photo loaded. Remove the main image background first, then tap Apply Background.");
+    if (foregroundImage) applyBtn.disabled = false;
+  } catch (error) {
+    backgroundImage = null;
+    message("Could not load background photo: " + error.message);
+  }
+});
 
+colorInput.addEventListener("input", () => {
+  // Selecting a color clears the selected background photo so the user can choose either option.
+  backgroundImage = null;
+  backgroundInput.value = "";
+  backgroundPreview.hidden = true;
+});
+
+removeBtn.addEventListener("click", async () => {
+  if (!originalFile) {
+    message("Please upload your main image first.");
+    return;
+  }
   removeBtn.disabled = true;
   applyBtn.disabled = true;
   message("Loading AI library and model. First use may take several minutes...");
-
   try {
-    
-const library = await import(
-  "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
-);
-
-console.log("Library exports:", Object.keys(library));
-
-const removeBackground =
-  library.removeBackground || library.default?.removeBackground || library.default;
-
-if (typeof removeBackground !== "function") {
-  throw new Error("Background removal function not found. Check library exports.");
-}
-    
+    const library = await import(
+      "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
+    );
+    const removeBackground =
+      library.removeBackground || library.default?.removeBackground || library.default;
 
     if (typeof removeBackground !== "function") {
-      throw new Error("AI library loaded but its function was not found.");
+      throw new Error("Background removal function not found. Library exports: " + Object.keys(library).join(", "));
     }
 
     message("AI library loaded. Removing background now...");
     const resultBlob = await removeBackground(originalFile);
-
     if (!(resultBlob instanceof Blob) || resultBlob.size === 0) {
       throw new Error("AI returned an empty image.");
     }
-
     if (foregroundURL) URL.revokeObjectURL(foregroundURL);
     foregroundURL = URL.createObjectURL(resultBlob);
     foregroundImage = await loadImage(foregroundURL);
-    drawImage(foregroundImage);
+    drawForegroundOnly(foregroundImage);
     applyBtn.disabled = false;
-    message("Success! Background removed. Choose a color and tap Apply New Background.");
+    message("Success! Background removed. Choose a background photo or color, then tap Apply Background.");
   } catch (error) {
     console.error("VidMorph background removal error:", error);
     message("Background removal failed.\n" +
       (error && error.message ? error.message : String(error)) +
-      "\nCheck your internet connection. If it continues, the browser may not support the required AI files.");
+      "\nCheck your internet connection and try again.");
   } finally {
     removeBtn.disabled = false;
   }
@@ -190,11 +239,10 @@ if (typeof removeBackground !== "function") {
 
 applyBtn.addEventListener("click", () => {
   if (!foregroundImage) {
-    message("Remove the background first.");
+    message("Please remove the background from the main image first.");
     return;
   }
-  drawImage(foregroundImage, colorInput.value);
-  message("New background applied. Tap Download PNG to save.");
+  drawComposite();
 });
 
 downloadBtn.addEventListener("click", () => {
@@ -202,10 +250,9 @@ downloadBtn.addEventListener("click", () => {
     message("Please upload an image first.");
     return;
   }
-
   canvas.toBlob(blob => {
     if (!blob) {
-      message("PNG creation failed.");
+      message("PNG creation failed. Please try again.");
       return;
     }
     const url = URL.createObjectURL(blob);
@@ -216,7 +263,7 @@ downloadBtn.addEventListener("click", () => {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1500);
-    message("Download started. Check your Downloads folder.");
+    message("Download started. Check your Gallery or Downloads folder.");
   }, "image/png");
 });
 </script>
