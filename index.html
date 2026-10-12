@@ -113,10 +113,20 @@ input.addEventListener("change", async () => {
   originalURL = URL.createObjectURL(file);
 
   try {
-    originalImage = await loadImage(originalURL);
-    preview.src = originalURL;
-    preview.hidden = false;
-    drawImageToCanvas(originalImage);
+    
+originalImage = await loadImage(originalURL);
+
+preview.onload = () => {
+  preview.hidden = false;
+};
+preview.onerror = () => {
+  message("Image preview failed. Please choose another image.");
+};
+preview.src = originalURL;
+preview.hidden = false;
+
+drawImageToCanvas(originalImage);
+    
     applyBtn.disabled = true;
     message("Image loaded. Tap Remove Background with AI.");
   } catch (error) {
