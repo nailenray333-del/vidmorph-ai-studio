@@ -267,5 +267,32 @@ downloadBtn.addEventListener("click", () => {
   }, "image/png");
 });
 </script>
+
+<!-- VidMorph AI Video Generator -->
+<section id="ai-video-generator" style="background:#1b1b2b;color:white;padding:20px;margin:20px 0;border-radius:16px;font-family:Arial,sans-serif;">
+  <h2>🎬 AI Video Generator</h2>
+  <p>Turn your text or image into a video.</p>
+
+  <h3>📝 Text to Video</h3>
+  <textarea id="videoPrompt" placeholder="Describe the video you want..." style="width:100%;min-height:90px;padding:10px;box-sizing:border-box;border-radius:8px;"></textarea>
+  <button type="button" onclick="alert('Video generation service will be connected in the next step.')" style="margin-top:10px;padding:12px;border:0;border-radius:8px;background:#7c5cff;color:white;">
+    Generate Video from Text
+  </button>
+
+  <hr style="margin:24px 0;border-color:#444;">
+
+  <h3>🖼️ Image to Video</h3>
+  <input id="videoImage" type="file" accept="image/*" style="max-width:100%;">
+  <p id="videoImageName">No image selected.</p>
+  <button type="button" onclick="const f=document.getElementById('videoImage').files[0];document.getElementById('videoImageName').textContent=f?'Selected: '+f.name:'Please select an image first.';" style="margin-top:10px;padding:12px;border:0;border-radius:8px;background:#00a884;color:white;">
+    Select Image
+  </button>
+
+  <p style="font-size:13px;color:#ccc;margin-top:16px;">
+    Note: AI video generation will work after connecting a compatible AI service.
+  </p>
+</section>
+<!-- End VidMorph AI Video Generator -->
+  
 </body>
 </html>
