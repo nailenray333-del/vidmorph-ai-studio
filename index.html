@@ -125,6 +125,9 @@ input.addEventListener("change", async () => {
 });
 
 removeBtn.addEventListener("click", async () => {
+  message("Button clicked. Checking AI model...");
+  console.log("Remove Background button clicked");
+
   if (!input.files[0]) {
     message("Please upload an image first.");
     return;
