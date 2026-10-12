@@ -1,308 +1,182 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>VidMorph AI Studio</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0b1020;
-      color: white;
-    }
-
-    .container {
-      width: 92%;
-      max-width: 700px;
-      margin: 30px auto;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 5px;
-    }
-
-    .subtitle {
-      text-align: center;
-      color: #aaa;
-      margin-bottom: 25px;
-    }
-
-    .card {
-      background: #151b2e;
-      padding: 20px;
-      border-radius: 16px;
-      margin-bottom: 18px;
-    }
-
-    label.title {
-      display: block;
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 12px;
-    }
-
-    input[type="file"] {
-      width: 100%;
-      padding: 12px;
-      background: #0d1324;
-      color: white;
-      border-radius: 10px;
-      border: 1px solid #333;
-    }
-
-    .options {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .option {
-      background: #0d1324;
-      padding: 12px;
-      border-radius: 10px;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 120px;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #0d1324;
-      color: white;
-      resize: vertical;
-    }
-
-    button {
-      width: 100%;
-      padding: 15px;
-      border: none;
-      border-radius: 12px;
-      background: #6c5ce7;
-      color: white;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-    }
-
-    #status {
-      display: none;
-      margin-top: 18px;
-      padding: 15px;
-      border-radius: 10px;
-      background: #10172a;
-      white-space: pre-line;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VidMorph AI Studio</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#fff;font-family:Arial,sans-serif}
+.container{width:92%;max-width:700px;margin:25px auto}
+h1{text-align:center;margin-bottom:5px}
+.subtitle{text-align:center;color:#aaa;margin-bottom:24px}
+.card{background:#151b2e;padding:18px;border-radius:15px;margin-bottom:16px}
+label.title{display:block;font-size:17px;font-weight:bold;margin-bottom:12px}
+input[type=file],select{width:100%;padding:12px;background:#0d1324;color:white;border:1px solid #333;border-radius:10px}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#6c5ce7;color:#fff;font-size:16px;font-weight:bold;margin-top:10px}
+button:disabled{opacity:.5}
+.preview{width:100%;max-height:440px;object-fit:contain;display:block;margin-top:12px;border-radius:10px;background-color:#222;background-image:linear-gradient(45deg,#333 25%,transparent 25%),linear-gradient(-45deg,#333 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#333 75%),linear-gradient(-45deg,transparent 75%,#333 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+#status{white-space:pre-line;background:#10172a;padding:12px;border-radius:10px;margin-top:12px;display:none;line-height:1.5}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input[type=color]{width:60px;height:45px;border:0;background:none}
+.small{font-size:13px;color:#bbb;line-height:1.5}
+</style>
 </head>
-
 <body>
-
-  <div class="container">
-
-    <h1>🎬 VidMorph AI</h1>
-
-    <div class="subtitle">
-      AI VIDEO STUDIO
-    </div>
-
-    <div class="card">
-      <label class="title">Upload Your Video</label>
-      <input type="file" id="videoInput" accept="video/*">
-    </div>
-
-    <div class="card">
-      <label class="title">Reference Image (Optional)</label>
-      <input type="file" id="imageInput" accept="image/*">
-    </div>
-
-    <div class="card">
-      <label class="title">Select AI Editing</label>
-
-      <div class="options">
-
-        <label class="option">
-          <input type="checkbox" value="Clothes">
-          Clothes
-        </label>
-
-        <label class="option">
-          <input type="checkbox" value="Pants">
-          Pants
-        </label>
-
-        <label class="option">
-          <input type="checkbox" value="Shoes">
-          Shoes
-        </label>
-
-        <label class="option">
-          <input type="checkbox" value="Hair">
-          Hair
-        </label>
-
-        <label class="option">
-          <input type="checkbox" value="Body">
-          Body
-        </label>
-
-        <label class="option">
-          <input type="checkbox" value="Face">
-          Face
-        </label>
-
-        <label class="option">
-          <input type="checkbox" value="Background">
-          Background
-        </label>
-
-        <label class="option">
-          <input type="checkbox" value="Accessories">
-          Accessories
-        </label>
-
-      </div>
-    </div>
-
-    <div class="card">
-      <label class="title">Describe Your Edit</label>
-
-      <textarea
-        id="prompt"
-        placeholder="Example: Change the clothes to a black leather jacket while keeping the person's face unchanged."
-      ></textarea>
-    </div>
-
-    <div class="card">
-
-      <button id="generateBtn">
-        ✨ Generate AI Video
-      </button>
-
-      <div id="status"></div>
-
-    </div>
-
-  </div>
-
-
-<script>
-
-  // VidMorph Google Apps Script Backend
-  const BACKEND_URL =
-    "https://script.google.com/macros/s/AKfycbwEbhvS_y_lvAufKxLG2LorJi0Rcmduorxbrrw5YN2ZQl9k_nhlwZ7vumQwAo83KIs/exec";
-
-
-  const generateBtn = document.getElementById("generateBtn");
-  const status = document.getElementById("status");
-
-
-  generateBtn.addEventListener("click", async function () {
-
-    const video =
-      document.getElementById("videoInput").files[0];
-
-    const image =
-      document.getElementById("imageInput").files[0];
-
-    const prompt =
-      document.getElementById("prompt").value.trim();
-
-
-    const selected = [];
-
-    document
-      .querySelectorAll('.options input[type="checkbox"]:checked')
-      .forEach(function (checkbox) {
-
-        selected.push(checkbox.value);
-
-      });
-
-
-    if (!video) {
-
-      alert("Please upload a video first.");
-
-      return;
-
-    }
-
-
-    status.style.display = "block";
-
-    status.innerText =
-      "⏳ Connecting to VidMorph AI Backend...";
-
-    generateBtn.disabled = true;
-
-
-    try {
-
-      // Test backend connection
-
-      const response =
-        await fetch(BACKEND_URL, {
-          method: "GET"
-        });
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          "Backend connection failed."
-        );
-
-      }
-
-
-      const result =
-        await response.text();
-
-
-      status.innerText =
-        "✅ Backend connected successfully!\n\n" +
-
-        "Selected edits: " +
-        (selected.length
-          ? selected.join(", ")
-          : "None") +
-
-        "\n\nPrompt: " +
-        (prompt || "No prompt") +
-
-        "\n\nBackend response:\n" +
-        result +
-
-        "\n\n⏳ AI video processing will be connected in the next step.";
-
-
-    } catch (error) {
-
-      status.innerText =
-        "❌ Connection Error:\n" +
-        error.message;
-
-    }
-
-
-    generateBtn.disabled = false;
-
+<div class="container">
+<h1>🎬 VidMorph AI</h1>
+<div class="subtitle">FREE AI IMAGE BACKGROUND STUDIO</div>
+
+<div class="card">
+<label class="title" for="imageInput">1. Upload Your Image</label>
+<input type="file" id="imageInput" accept="image/*">
+<img id="preview" class="preview" alt="Image preview" hidden>
+</div>
+
+<div class="card">
+<label class="title">2. Choose Background</label>
+<div class="row">
+<label for="bgColor">Background color:</label>
+<input type="color" id="bgColor" value="#ffffff">
+</div>
+<button id="removeBtn">✨ Remove Background with AI</button>
+<button id="applyBtn" disabled>🎨 Apply New Background</button>
+<p class="small">The AI model is downloaded the first time you use background removal. Keep the page open and use a stable internet connection.</p>
+</div>
+
+<div class="card">
+<label class="title">3. Edited Image</label>
+<canvas id="canvas" class="preview"></canvas>
+<button id="downloadBtn" disabled>⬇️ Download PNG</button>
+<div id="status" role="status"></div>
+</div>
+</div>
+
+<script type="module">
+import removeBackground from
+"https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm";
+
+const input = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+const colorInput = document.getElementById("bgColor");
+const removeBtn = document.getElementById("removeBtn");
+const applyBtn = document.getElementById("applyBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const status = document.getElementById("status");
+
+let originalImage = null;
+let foreground = null;
+let originalURL = null;
+let foregroundURL = null;
+
+function message(text) {
+  status.style.display = "block";
+  status.textContent = text;
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Image could not be loaded."));
+    image.src = url;
   });
+}
 
+function drawImageToCanvas(image, backgroundColor = null) {
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (backgroundColor) {
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  downloadBtn.disabled = false;
+}
+
+input.addEventListener("change", async () => {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    message("Please choose an image file.");
+    return;
+  }
+
+  if (originalURL) URL.revokeObjectURL(originalURL);
+  if (foregroundURL) URL.revokeObjectURL(foregroundURL);
+  foregroundURL = null;
+  foreground = null;
+  originalURL = URL.createObjectURL(file);
+
+  try {
+    originalImage = await loadImage(originalURL);
+    preview.src = originalURL;
+    preview.hidden = false;
+    drawImageToCanvas(originalImage);
+    applyBtn.disabled = true;
+    message("Image loaded. Tap Remove Background with AI.");
+  } catch (error) {
+    message("Could not open this image.");
+  }
+});
+
+removeBtn.addEventListener("click", async () => {
+  if (!input.files[0]) {
+    message("Please upload an image first.");
+    return;
+  }
+
+  removeBtn.disabled = true;
+  applyBtn.disabled = true;
+  message("⏳ Loading AI model and removing background. The first run may take several minutes.");
+
+  try {
+    const resultBlob = await removeBackground(input.files[0]);
+    if (foregroundURL) URL.revokeObjectURL(foregroundURL);
+    foregroundURL = URL.createObjectURL(resultBlob);
+    foreground = await loadImage(foregroundURL);
+    drawImageToCanvas(foreground);
+    applyBtn.disabled = false;
+    message("✅ Background removed! Choose a color and tap Apply New Background.");
+  } catch (error) {
+    console.error(error);
+    message("❌ Background removal failed. Check internet access and try a smaller image. Details: " + (error.message || error));
+  } finally {
+    removeBtn.disabled = false;
+  }
+});
+
+applyBtn.addEventListener("click", () => {
+  if (!foreground) return;
+  drawImageToCanvas(foreground, colorInput.value);
+  message("✅ New background applied. Tap Download PNG to save your image.");
+});
+
+downloadBtn.addEventListener("click", () => {
+  try {
+    canvas.toBlob(blob => {
+      if (!blob) {
+        message("Could not create the PNG file.");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "vidmorph-edited.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      message("✅ Download started. Check your Downloads folder.");
+    }, "image/png");
+  } catch (error) {
+    message("Download failed: " + error.message);
+  }
+});
 </script>
-
 </body>
 </html>
