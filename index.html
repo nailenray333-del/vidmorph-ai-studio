@@ -146,10 +146,20 @@ removeBtn.addEventListener("click", async () => {
   message("Loading AI library and model. First use may take several minutes...");
 
   try {
-    const module = await import(
-      "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
-    );
-    const removeBackground = module.default;
+    
+const library = await import(
+  "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm"
+);
+
+console.log("Library exports:", Object.keys(library));
+
+const removeBackground =
+  library.removeBackground || library.default?.removeBackground || library.default;
+
+if (typeof removeBackground !== "function") {
+  throw new Error("Background removal function not found. Check library exports.");
+}
+    
 
     if (typeof removeBackground !== "function") {
       throw new Error("AI library loaded but its function was not found.");
