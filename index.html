@@ -59,7 +59,19 @@ hr{border:0;border-top:1px solid #303950;margin:18px 0}
   <div class="card">
     <span class="title">4. Edited Image</span>
     <canvas id="canvas" class="preview" hidden></canvas>
-    <button id="downloadBtn" disabled>⬇️ Download PNG</button>
+    <button id="downloadBtn" disabled>⬇️ Download PNG</button><div id="backgroundControls" hidden>
+  <hr>
+  <label for="bgZoom">Background Zoom</label>
+  <input type="range" id="bgZoom" min="100" max="250" value="100" step="5">
+
+  <label for="bgX">Move Left / Right</label>
+  <input type="range" id="bgX" min="-100" max="100" value="0">
+
+  <label for="bgY">Move Up / Down</label>
+  <input type="range" id="bgY" min="-100" max="100" value="0">
+
+  <button type="button" id="resetBackground">Reset Background Position</button>
+    </div>
     <div id="status" role="status" aria-live="polite"></div>
   </div>
 </div>
@@ -70,6 +82,12 @@ const preview = document.getElementById("preview");
 const backgroundInput = document.getElementById("backgroundInput");
 const backgroundPreview = document.getElementById("backgroundPreview");
 const colorInput = document.getElementById("bgColor");
+const backgroundControls = document.getElementById("backgroundControls");
+const bgZoom = document.getElementById("bgZoom");
+const bgX = document.getElementById("bgX");
+const bgY = document.getElementById("bgY");
+const resetBackground = document.getElementById("resetBackground");
+  
 const removeBtn = document.getElementById("removeBtn");
 const applyBtn = document.getElementById("applyBtn");
 const downloadBtn = document.getElementById("downloadBtn");
@@ -117,11 +135,27 @@ function drawComposite() {
   ctx.clearRect(0, 0, width, height);
 
   if (backgroundImage) {
-    // Fill the canvas while keeping the background photo's aspect ratio.
-    const scale = Math.max(width / backgroundImage.naturalWidth, height / backgroundImage.naturalHeight);
-    const drawWidth = backgroundImage.naturalWidth * scale;
-    const drawHeight = backgroundImage.naturalHeight * scale;
-    ctx.drawImage(backgroundImage, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+    
+const baseScale = Math.max(
+  width / backgroundImage.naturalWidth,
+  height / backgroundImage.naturalHeight
+);
+const zoom = Number(bgZoom.value) / 100;
+const drawWidth = backgroundImage.naturalWidth * baseScale * zoom;
+const drawHeight = backgroundImage.naturalHeight * baseScale * zoom;
+const maxX = Math.max(0, (drawWidth - width) / 2);
+const maxY = Math.max(0, (drawHeight - height) / 2);
+const offsetX = (Number(bgX.value) / 100) * maxX;
+const offsetY = (Number(bgY.value) / 100) * maxY;
+
+ctx.drawImage(
+  backgroundImage,
+  (width - drawWidth) / 2 + offsetX,
+  (height - drawHeight) / 2 + offsetY,
+  drawWidth,
+  drawHeight
+);
+    
   } else {
     ctx.fillStyle = colorInput.value;
     ctx.fillRect(0, 0, width, height);
@@ -180,6 +214,12 @@ backgroundInput.addEventListener("change", async () => {
   message("Loading chosen background photo...");
   try {
     backgroundImage = await loadImage(backgroundURL);
+    
+backgroundControls.hidden = false;
+bgZoom.value = "100";
+bgX.value = "0";
+bgY.value = "0";
+    
     backgroundPreview.src = backgroundURL;
     backgroundPreview.hidden = false;
     message("Background photo loaded. Remove the main image background first, then tap Apply Background.");
@@ -195,6 +235,7 @@ colorInput.addEventListener("input", () => {
   backgroundImage = null;
   backgroundInput.value = "";
   backgroundPreview.hidden = true;
+  backgroundControls.hidden = true;
 });
 
 removeBtn.addEventListener("click", async () => {
@@ -245,6 +286,23 @@ applyBtn.addEventListener("click", () => {
   drawComposite();
 });
 
+function updateBackgroundPosition() {
+  if (foregroundImage && backgroundImage) {
+    drawComposite();
+  }
+}
+
+bgZoom.addEventListener("input", updateBackgroundPosition);
+bgX.addEventListener("input", updateBackgroundPosition);
+bgY.addEventListener("input", updateBackgroundPosition);
+
+resetBackground.addEventListener("click", () => {
+  bgZoom.value = "100";
+  bgX.value = "0";
+  bgY.value = "0";
+  updateBackgroundPosition();
+});
+  
 downloadBtn.addEventListener("click", () => {
   if (!canvas.width || !canvas.height) {
     message("Please upload an image first.");
