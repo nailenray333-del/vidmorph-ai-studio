@@ -69,7 +69,11 @@ hr{border:0;border-top:1px solid #303950;margin:18px 0}
 
   <label for="bgY">Move Up / Down</label>
   <input type="range" id="bgY" min="-100" max="100" value="0">
+<label for="mainX">Main Image Move Left / Right</label>
+<input type="range" id="mainX" min="-100" max="100" value="0" step="1">
 
+<label for="mainY">Main Image Move Up / Down</label>
+<input type="range" id="mainY" min="-100" max="100" value="0" step="1">
   <button type="button" id="resetBackground">Reset Background Position</button>
     </div>
     <div id="status" role="status" aria-live="polite"></div>
@@ -87,6 +91,9 @@ const bgZoom = document.getElementById("bgZoom");
 const bgX = document.getElementById("bgX");
 const bgY = document.getElementById("bgY");
 const resetBackground = document.getElementById("resetBackground");
+  
+const mainX = document.getElementById("mainX");
+const mainY = document.getElementById("mainY");
   
 const removeBtn = document.getElementById("removeBtn");
 const applyBtn = document.getElementById("applyBtn");
@@ -162,7 +169,18 @@ ctx.drawImage(
   }
 
   // Foreground image has transparent pixels where the original background was removed.
-  ctx.drawImage(foregroundImage, 0, 0, width, height);
+  
+const mainOffsetX = (Number(mainX.value) / 100) * (width / 2);
+const mainOffsetY = (Number(mainY.value) / 100) * (height / 2);
+
+ctx.drawImage(
+  foregroundImage,
+  mainOffsetX,
+  mainOffsetY,
+  width,
+  height
+);
+  
   canvas.hidden = false;
   downloadBtn.disabled = false;
   message(backgroundImage
@@ -296,10 +314,15 @@ bgZoom.addEventListener("input", updateBackgroundPosition);
 bgX.addEventListener("input", updateBackgroundPosition);
 bgY.addEventListener("input", updateBackgroundPosition);
 
+mainX.addEventListener("input", updateBackgroundPosition);
+mainY.addEventListener("input", updateBackgroundPosition);
+  
 resetBackground.addEventListener("click", () => {
   bgZoom.value = "100";
   bgX.value = "0";
   bgY.value = "0";
+  mainX.value = "0";
+mainY.value = "0";
   updateBackgroundPosition();
 });
   
