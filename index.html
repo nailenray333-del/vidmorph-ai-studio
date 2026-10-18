@@ -22,6 +22,15 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .small{font-size:13px;color:#bbb;line-height:1.5}
 .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 hr{border:0;border-top:1px solid #303950;margin:18px 0}
+.control-panel{margin-top:18px;padding-top:4px;border-top:1px solid #303950}
+.control-section{margin:18px 0}
+.control-section h3{font-size:16px;margin:0 0 12px}
+.control-section label{display:block;font-size:14px;font-weight:bold;margin:14px 0 6px}
+.control-section input[type=range]{display:block;width:100%;min-height:30px;margin:0;accent-color:#6c5ce7}
+.control-value{font-size:12px;color:#bbb;margin:4px 0}
+.control-buttons{display:flex;gap:10px;flex-wrap:wrap}
+.control-buttons button{flex:1;min-width:140px}
+@media(max-width:420px){.container{width:94%;margin:12px auto}.card{padding:14px}.control-buttons{display:block}}
 </style>
 </head>
 <body>
@@ -59,22 +68,37 @@ hr{border:0;border-top:1px solid #303950;margin:18px 0}
   <div class="card">
     <span class="title">4. Edited Image</span>
     <canvas id="canvas" class="preview" hidden></canvas>
-    <button id="downloadBtn" disabled>⬇️ Download PNG</button><div id="backgroundControls" hidden>
-  <hr>
-  <label for="bgZoom">Background Zoom</label>
-  <input type="range" id="bgZoom" min="100" max="250" value="100" step="5">
+    <button id="downloadBtn" disabled>⬇️ Download PNG</button>
 
-  <label for="bgX">Move Left / Right</label>
-  <input type="range" id="bgX" min="-100" max="100" value="0">
+    <div class="control-panel" id="imageControls">
+      <div class="control-section">
+        <h3>🖼️ Background Controls</h3>
+        <label for="bgZoom">Background Zoom: <span id="bgZoomValue">100%</span></label>
+        <input type="range" id="bgZoom" min="100" max="300" value="100" step="5">
+        <label for="bgX">Background Move Left / Right: <span id="bgXValue">0</span></label>
+        <input type="range" id="bgX" min="-100" max="100" value="0" step="1">
+        <label for="bgY">Background Move Up / Down: <span id="bgYValue">0</span></label>
+        <input type="range" id="bgY" min="-100" max="100" value="0" step="1">
+      </div>
 
-  <label for="bgY">Move Up / Down</label>
-  <input type="range" id="bgY" min="-100" max="100" value="0">
-<label for="mainX">Main Image Move Left / Right</label>
-<input type="range" id="mainX" min="-100" max="100" value="0" step="1">
+      <hr>
 
-<label for="mainY">Main Image Move Up / Down</label>
-<input type="range" id="mainY" min="-100" max="100" value="0" step="1">
-  <button type="button" id="resetBackground">Reset Background Position</button>
+      <div class="control-section">
+        <h3>🧍 Main Image Controls</h3>
+        <label for="mainZoom">Main Image Zoom: <span id="mainZoomValue">100%</span></label>
+        <input type="range" id="mainZoom" min="25" max="250" value="100" step="5">
+        <label for="mainX">Main Image Move Left / Right: <span id="mainXValue">0</span></label>
+        <input type="range" id="mainX" min="-100" max="100" value="0" step="1">
+        <label for="mainY">Main Image Move Up / Down: <span id="mainYValue">0</span></label>
+        <input type="range" id="mainY" min="-100" max="100" value="0" step="1">
+        <p class="small">Use these controls to resize or reposition the cut-out main image.</p>
+      </div>
+
+      <div class="control-buttons">
+        <button type="button" id="resetBackground">↩️ Reset Background</button>
+        <button type="button" id="resetMain">↩️ Reset Main Image</button>
+        <button type="button" id="resetAll">↩️ Reset All</button>
+      </div>
     </div>
     <div id="status" role="status" aria-live="polite"></div>
   </div>
@@ -86,21 +110,19 @@ const preview = document.getElementById("preview");
 const backgroundInput = document.getElementById("backgroundInput");
 const backgroundPreview = document.getElementById("backgroundPreview");
 const colorInput = document.getElementById("bgColor");
-const backgroundControls = document.getElementById("backgroundControls");
-const bgZoom = document.getElementById("bgZoom");
-const bgX = document.getElementById("bgX");
-const bgY = document.getElementById("bgY");
-const resetBackground = document.getElementById("resetBackground");
-  
-const mainX = document.getElementById("mainX");
-const mainY = document.getElementById("mainY");
-  
 const removeBtn = document.getElementById("removeBtn");
 const applyBtn = document.getElementById("applyBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const status = document.getElementById("status");
+
+const bgZoom = document.getElementById("bgZoom");
+const bgX = document.getElementById("bgX");
+const bgY = document.getElementById("bgY");
+const mainZoom = document.getElementById("mainZoom");
+const mainX = document.getElementById("mainX");
+const mainY = document.getElementById("mainY");
 
 let originalFile = null;
 let sourceURL = null;
@@ -109,6 +131,7 @@ let foregroundURL = null;
 let foregroundImage = null;
 let backgroundURL = null;
 let backgroundImage = null;
+let hasAppliedBackground = false;
 
 function message(text) {
   status.style.display = "block";
@@ -122,6 +145,14 @@ function loadImage(url) {
     img.src = url;
   });
 }
+function updateSliderLabels() {
+  document.getElementById("bgZoomValue").textContent = bgZoom.value + "%";
+  document.getElementById("bgXValue").textContent = bgX.value;
+  document.getElementById("bgYValue").textContent = bgY.value;
+  document.getElementById("mainZoomValue").textContent = mainZoom.value + "%";
+  document.getElementById("mainXValue").textContent = mainX.value;
+  document.getElementById("mainYValue").textContent = mainY.value;
+}
 function drawForegroundOnly(img) {
   canvas.width = img.naturalWidth || img.width;
   canvas.height = img.naturalHeight || img.height;
@@ -130,62 +161,81 @@ function drawForegroundOnly(img) {
   canvas.hidden = false;
   downloadBtn.disabled = false;
 }
-function drawComposite() {
+function drawComposite(showMessage = true) {
   if (!foregroundImage) {
-    message("Please remove the background from your main image first.");
+    if (showMessage) message("Please remove the background from your main image first.");
     return;
   }
+
   const width = foregroundImage.naturalWidth || foregroundImage.width;
   const height = foregroundImage.naturalHeight || foregroundImage.height;
   canvas.width = width;
   canvas.height = height;
   ctx.clearRect(0, 0, width, height);
 
+  // Draw the background photo or a solid color.
   if (backgroundImage) {
-    
-const baseScale = Math.max(
-  width / backgroundImage.naturalWidth,
-  height / backgroundImage.naturalHeight
-);
-const zoom = Number(bgZoom.value) / 100;
-const drawWidth = backgroundImage.naturalWidth * baseScale * zoom;
-const drawHeight = backgroundImage.naturalHeight * baseScale * zoom;
-const maxX = Math.max(0, (drawWidth - width) / 2);
-const maxY = Math.max(0, (drawHeight - height) / 2);
-const offsetX = (Number(bgX.value) / 100) * maxX;
-const offsetY = (Number(bgY.value) / 100) * maxY;
+    ctx.fillStyle = colorInput.value;
+    ctx.fillRect(0, 0, width, height);
 
-ctx.drawImage(
-  backgroundImage,
-  (width - drawWidth) / 2 + offsetX,
-  (height - drawHeight) / 2 + offsetY,
-  drawWidth,
-  drawHeight
-);
-    
+    const baseScale = Math.max(
+      width / backgroundImage.naturalWidth,
+      height / backgroundImage.naturalHeight
+    );
+    const zoom = Number(bgZoom.value) / 100;
+    const drawWidth = backgroundImage.naturalWidth * baseScale * zoom;
+    const drawHeight = backgroundImage.naturalHeight * baseScale * zoom;
+
+    // Allow movement even when the background image has the same aspect ratio as the canvas.
+    const maxX = Math.max(0, (drawWidth - width) / 2) + width * 0.25;
+    const maxY = Math.max(0, (drawHeight - height) / 2) + height * 0.25;
+    const offsetX = (Number(bgX.value) / 100) * maxX;
+    const offsetY = (Number(bgY.value) / 100) * maxY;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, width, height);
+    ctx.clip();
+    ctx.drawImage(
+      backgroundImage,
+      (width - drawWidth) / 2 + offsetX,
+      (height - drawHeight) / 2 + offsetY,
+      drawWidth,
+      drawHeight
+    );
+    ctx.restore();
   } else {
     ctx.fillStyle = colorInput.value;
     ctx.fillRect(0, 0, width, height);
   }
 
-  // Foreground image has transparent pixels where the original background was removed.
-  
-const mainOffsetX = (Number(mainX.value) / 100) * (width / 2);
-const mainOffsetY = (Number(mainY.value) / 100) * (height / 2);
+  // Move and resize the foreground cut-out independently.
+  const mainScale = Number(mainZoom.value) / 100;
+  const mainWidth = width * mainScale;
+  const mainHeight = height * mainScale;
+  const mainOffsetX = (Number(mainX.value) / 100) * width * 0.45;
+  const mainOffsetY = (Number(mainY.value) / 100) * height * 0.45;
 
-ctx.drawImage(
-  foregroundImage,
-  mainOffsetX,
-  mainOffsetY,
-  width,
-  height
-);
-  
+  ctx.drawImage(
+    foregroundImage,
+    (width - mainWidth) / 2 + mainOffsetX,
+    (height - mainHeight) / 2 + mainOffsetY,
+    mainWidth,
+    mainHeight
+  );
+
   canvas.hidden = false;
   downloadBtn.disabled = false;
-  message(backgroundImage
-    ? "Background photo applied successfully. Tap Download PNG to save."
-    : "Background color applied successfully. Tap Download PNG to save.");
+  hasAppliedBackground = true;
+  if (showMessage) {
+    message(backgroundImage
+      ? "Background photo and main image updated. Tap Download PNG to save."
+      : "Background color and main image updated. Tap Download PNG to save.");
+  }
+}
+function updatePreview() {
+  updateSliderLabels();
+  if (foregroundImage && hasAppliedBackground) drawComposite(false);
 }
 
 input.addEventListener("change", async () => {
@@ -197,6 +247,7 @@ input.addEventListener("change", async () => {
   }
   originalFile = file;
   foregroundImage = null;
+  hasAppliedBackground = false;
   applyBtn.disabled = true;
   downloadBtn.disabled = true;
   canvas.hidden = true;
@@ -205,6 +256,7 @@ input.addEventListener("change", async () => {
   if (foregroundURL) URL.revokeObjectURL(foregroundURL);
   sourceURL = URL.createObjectURL(file);
   foregroundURL = null;
+  sourceImage = null;
   preview.hidden = true;
   message("Loading main image preview...");
   try {
@@ -232,16 +284,15 @@ backgroundInput.addEventListener("change", async () => {
   message("Loading chosen background photo...");
   try {
     backgroundImage = await loadImage(backgroundURL);
-    
-backgroundControls.hidden = false;
-bgZoom.value = "100";
-bgX.value = "0";
-bgY.value = "0";
-    
     backgroundPreview.src = backgroundURL;
     backgroundPreview.hidden = false;
-    message("Background photo loaded. Remove the main image background first, then tap Apply Background.");
+    bgZoom.value = "100";
+    bgX.value = "0";
+    bgY.value = "0";
+    updateSliderLabels();
     if (foregroundImage) applyBtn.disabled = false;
+    message("Background photo loaded. Remove the main image background first, then tap Apply Background.");
+    if (foregroundImage && hasAppliedBackground) drawComposite(false);
   } catch (error) {
     backgroundImage = null;
     message("Could not load background photo: " + error.message);
@@ -249,11 +300,10 @@ bgY.value = "0";
 });
 
 colorInput.addEventListener("input", () => {
-  // Selecting a color clears the selected background photo so the user can choose either option.
   backgroundImage = null;
   backgroundInput.value = "";
   backgroundPreview.hidden = true;
-  backgroundControls.hidden = true;
+  if (foregroundImage && hasAppliedBackground) drawComposite(false);
 });
 
 removeBtn.addEventListener("click", async () => {
@@ -283,6 +333,7 @@ removeBtn.addEventListener("click", async () => {
     if (foregroundURL) URL.revokeObjectURL(foregroundURL);
     foregroundURL = URL.createObjectURL(resultBlob);
     foregroundImage = await loadImage(foregroundURL);
+    hasAppliedBackground = false;
     drawForegroundOnly(foregroundImage);
     applyBtn.disabled = false;
     message("Success! Background removed. Choose a background photo or color, then tap Apply Background.");
@@ -304,28 +355,37 @@ applyBtn.addEventListener("click", () => {
   drawComposite();
 });
 
-function updateBackgroundPosition() {
-  if (foregroundImage && backgroundImage) {
-    drawComposite();
-  }
-}
+[bgZoom, bgX, bgY, mainZoom, mainX, mainY].forEach(control => {
+  control.addEventListener("input", updatePreview);
+});
 
-bgZoom.addEventListener("input", updateBackgroundPosition);
-bgX.addEventListener("input", updateBackgroundPosition);
-bgY.addEventListener("input", updateBackgroundPosition);
-
-mainX.addEventListener("input", updateBackgroundPosition);
-mainY.addEventListener("input", updateBackgroundPosition);
-  
-resetBackground.addEventListener("click", () => {
+document.getElementById("resetBackground").addEventListener("click", () => {
   bgZoom.value = "100";
   bgX.value = "0";
   bgY.value = "0";
-  mainX.value = "0";
-mainY.value = "0";
-  updateBackgroundPosition();
+  updateSliderLabels();
+  if (foregroundImage && hasAppliedBackground) drawComposite(false);
 });
-  
+
+document.getElementById("resetMain").addEventListener("click", () => {
+  mainZoom.value = "100";
+  mainX.value = "0";
+  mainY.value = "0";
+  updateSliderLabels();
+  if (foregroundImage && hasAppliedBackground) drawComposite(false);
+});
+
+document.getElementById("resetAll").addEventListener("click", () => {
+  bgZoom.value = "100";
+  bgX.value = "0";
+  bgY.value = "0";
+  mainZoom.value = "100";
+  mainX.value = "0";
+  mainY.value = "0";
+  updateSliderLabels();
+  if (foregroundImage && hasAppliedBackground) drawComposite(false);
+});
+
 downloadBtn.addEventListener("click", () => {
   if (!canvas.width || !canvas.height) {
     message("Please upload an image first.");
@@ -347,18 +407,18 @@ downloadBtn.addEventListener("click", () => {
     message("Download started. Check your Gallery or Downloads folder.");
   }, "image/png");
 });
+
+updateSliderLabels();
 </script>
 
 <!-- VidMorph AI Video Generator -->
-<section id="ai-video-generator" style="background:#1b1b2b;color:white;padding:20px;margin:20px 0;border-radius:16px;font-family:Arial,sans-serif;">
+<section id="ai-video-generator" style="background:#1b1b2b;color:white;padding:20px;margin:20px auto;max-width:760px;border-radius:16px;font-family:Arial,sans-serif;">
   <h2>🎬 AI Video Generator</h2>
   <p>Turn your text or image into a video.</p>
 
   <h3>📝 Text to Video</h3>
   <textarea id="videoPrompt" placeholder="Describe the video you want..." style="width:100%;min-height:90px;padding:10px;box-sizing:border-box;border-radius:8px;"></textarea>
-  
-<button type="button" onclick="generateVideoFromText()" style="margin-top:10px;padding:12px;border:0;border-radius:8px;background:#7c5cff;color:white;">
-  
+  <button type="button" onclick="generateVideoFromText()" style="margin-top:10px;padding:12px;border:0;border-radius:8px;background:#7c5cff;color:white;">
     Generate Video from Text
   </button>
 
@@ -371,28 +431,19 @@ downloadBtn.addEventListener("click", () => {
     Select Image
   </button>
 
-<script>
-const VIDMORPH_BACKEND = "https://vidmorph-ai-backend.nailenray333.workers.dev";
-</script>
-  
   <p style="font-size:13px;color:#ccc;margin-top:16px;">
     Note: AI video generation will work after connecting a compatible AI service.
   </p>
 </section>
-<!-- End VidMorph AI Video Generator -->
-
 <script>
 async function generateVideoFromText() {
   const prompt = document.getElementById("videoPrompt").value.trim();
-
   if (!prompt) {
     alert("Please enter a video prompt first.");
     return;
   }
-
   try {
     alert("Sending request to VidMorph AI Backend...");
-
     const response = await fetch(
       "https://vidmorph-ai-backend.nailenray333.workers.dev/generate",
       {
@@ -401,7 +452,6 @@ async function generateVideoFromText() {
         body: JSON.stringify({ prompt })
       }
     );
-
     const result = await response.json();
     alert(JSON.stringify(result, null, 2));
   } catch (error) {
@@ -411,7 +461,7 @@ async function generateVideoFromText() {
 </script>
 
 <!-- VidMorph AI Video + Sound Generator -->
-<section id="video-sound-generator" style="padding:20px;margin:20px 0;border-radius:12px;background:#17172b;color:white;">
+<section id="video-sound-generator" style="padding:20px;margin:20px auto;max-width:760px;border-radius:12px;background:#17172b;color:white;">
   <h2>🎬 AI Video + Sound Generator</h2>
   <p>Text থেকে ভিডিও ও সাউন্ড তৈরি করুন</p>
   <iframe
@@ -424,6 +474,5 @@ async function generateVideoFromText() {
     loading="lazy">
   </iframe>
 </section>
-  
 </body>
 </html>
